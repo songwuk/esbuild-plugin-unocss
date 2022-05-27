@@ -11,12 +11,12 @@
   ],
   "author": "Song wuk <1017301325@qq.com>",
   "license": "MIT",
-  "homepage": "https://github.com/antfu/tsup-plugin-unocss#readme",
+  "homepage": "https://github.com/songwuk/tsup-plugin-unocss#readme",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/antfu/tsup-plugin-unocss.git"
+    "url": "git+https://github.com/songwuk/tsup-plugin-unocss.git"
   },
-  "bugs": "https://github.com/antfu/tsup-plugin-unocss/issues",
+  "bugs": "https://github.com/songwuk/tsup-plugin-unocss/issues",
   "sideEffects": false,
   "exports": {
     ".": {
