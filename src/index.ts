@@ -30,21 +30,14 @@ export default (options: myOptions = { isFileType: 'ts' }): Plugin => ({
         sourceType: 'unambiguous',
       })
       const filename = path.basename(args.path).replace(/\.ts$/, '.css')
-      // first create css file
-      const { css } = await generator.generate(source)
-      const tmpFilePath = path.resolve(sourceDir, filename)
-      const data = new Uint8Array(Buffer.from(`${css}`))
-      if (!css) {
-        console.error('Error', 'css is empty')
-        return undefined
-      }
-      await fs.writeFile(tmpFilePath, data, 'utf-8')
-      // then add css to code
+      let targets: unknown[] = []
       await traverse(code, {
         ObjectExpression(path: any) {
           for (const iterator of path.node.properties) {
-            if (iterator.type === 'ObjectProperty' && iterator.key.name !== 'name')
-              iterator.key.name = `${iterator.key.name}unocss`
+            if (iterator.type === 'ObjectProperty' && iterator.key.name !== 'name') {
+              targets.push(iterator.key.name)
+              targets = [...new Set(targets)]
+            }
           }
         },
         Program: {
@@ -64,14 +57,27 @@ export default (options: myOptions = { isFileType: 'ts' }): Plugin => ({
               },
             })
             if (!state.trackerImportId)
-              // import 'demo.css'
+            // import 'demo.css'
               state.trackerImportId = addSideEffect(path, filename)
           },
+          exit(paths: any) {
+            console.log(targets, 'targets3')
+            // first create css file
+            generator.generate(targets.join(' ')).then(async (target) => {
+              const tmpFilePath = path.resolve(sourceDir, filename)
+              const data = new Uint8Array(Buffer.from(`${target.css}`))
+              if (!target.css) {
+                console.error('Error', 'css is empty')
+                return undefined
+              }
+              await fs.writeFile(tmpFilePath, data, 'utf-8')
+              // then add css to code
+            })
+          },
         },
-
       })
       const outfile = await generate(code, { sourceMaps: true })
-      console.log(outfile.code)
+      console.log(outfile.code, 'outfile.code')
       try {
         return {
           contents: `${outfile.code}//# sourceMappingURL=${outfile.map.toString()}`,
