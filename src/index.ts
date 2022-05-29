@@ -2,44 +2,84 @@ import path from 'path'
 import { createGenerator } from '@unocss/core'
 import presetUno from '@unocss/preset-uno'
 import type { Plugin } from 'esbuild'
+import * as parser from '@babel/parser'
+import _traverse from '@babel/traverse'
+import _generate from '@babel/generator'
 import fs from 'fs-extra'
+import { addSideEffect } from '@babel/helper-module-imports'
+const generate = _generate.default
+const traverse = _traverse.default
+// import * as ts from 'typescript'
 interface myOptions {
-  tsx?: Boolean
+  isFileType: 'js' | 'ts' | 'tsx'
 }
-
-export default (options: myOptions = { tsx: true }): Plugin => ({
+const state = {
+  trackerImportId: '',
+}
+export default (options: myOptions = { isFileType: 'ts' }): Plugin => ({
   name: 'esbuild-plugin-unocss',
   setup(build) {
-    options.tsx = options.tsx ?? true
-    build.onResolve({ filter: /\.ts$/ }, async (args) => {
-      if (/index.ts$/g.test(args.path))
-        return
-      if (args.resolveDir === '')
-        return // Ignore unresolvable paths
-      return {
-        path: path.isAbsolute(args.path) ? args.path : path.join(args.resolveDir, args.path),
-        namespace: 'unocss-stub',
-      }
-    })
-    build.onLoad({ filter: /\.*/, namespace: 'unocss-stub' }, async (args) => {
+    options.isFileType = options.isFileType || 'ts'
+    const filter = /demo/
+    build.onLoad({ filter }, async (args) => {
       const options = presetUno()
       const sourceDir = path.dirname(args.path)
       const generator = createGenerator(options, { /* default options */ })
       const source = await fs.readFile(args.path, 'utf-8')
-      // const esbuildCode = esbuild.transformSync(source, {
-      //   jsxFactory: 'preserve',
-      //   loader: 'css',
-      // })
-      const filename = path.basename(args.path).replace(/\.ts$/g, '.css')
+      const code = parser.parse(source, {
+        sourceType: 'unambiguous',
+      })
+      const filename = path.basename(args.path).replace(/\.ts$/, '.css')
+      // first create css file
       const { css } = await generator.generate(source)
-      if (!css)
-        return null
       const tmpFilePath = path.resolve(sourceDir, filename)
       const data = new Uint8Array(Buffer.from(`${css}`))
+      if (!css) {
+        console.error('Error', 'css is empty')
+        return undefined
+      }
       await fs.writeFile(tmpFilePath, data, 'utf-8')
-      return {
-        contents: new Uint8Array(Buffer.from(`${css}`)),
-        loader: 'css',
+      // then add css to code
+      await traverse(code, {
+        ObjectExpression(path: any) {
+          for (const iterator of path.node.properties) {
+            if (iterator.type === 'ObjectProperty' && iterator.key.name !== 'name')
+              iterator.key.name = `${iterator.key.name}unocss`
+          }
+        },
+        Program: {
+          enter(path: { traverse: (arg0: { ImportDeclaration(curPath: any): void }) => void }) {
+            path.traverse({
+              ImportDeclaration(curPath: any) {
+                // 有的话就不导入
+                const requirePath = curPath.get('source').node.value
+                if (requirePath === filename) {
+                  const specifierPath = curPath.specifiers[0]
+                  if (specifierPath.isImportSpecifier())
+                    state.trackerImportId = specifierPath.toString()
+                  else if (specifierPath.isImportNamespaceSpecifier())
+                    state.trackerImportId = specifierPath.get('local').toString()
+                  curPath.stop()
+                }
+              },
+            })
+            if (!state.trackerImportId)
+              // import 'demo.css'
+              state.trackerImportId = addSideEffect(path, filename)
+          },
+        },
+
+      })
+      const outfile = await generate(code, { sourceMaps: true })
+      console.log(outfile.code)
+      try {
+        return {
+          contents: `${outfile.code}//# sourceMappingURL=${outfile.map.toString()}`,
+          loader: 'ts',
+        }
+      }
+      catch (error) {
+        console.error(error)
       }
     })
   },

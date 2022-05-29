@@ -1,9 +1,12 @@
 import { defineConfig } from 'tsup'
-import esbuildPluginUnocss from './src/index'
 export default defineConfig({
   entry: ['src/index.ts'],
-  esbuildPlugins: [esbuildPluginUnocss()],
   splitting: false,
+  loader: {
+    '.ts': 'ts',
+  },
+  format: ['cjs', 'esm', 'iife'],
+  external: ['vue'],
   sourcemap: true,
   clean: true,
 })

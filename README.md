@@ -5,23 +5,23 @@
 
 ## Usage
 
-Install esbuild and the plugin
+Install tsup and the plugin
 
 ```shell
-npm install -D esbuild
+npm install -D tsup
 npm install -D tsup-plugin-unocss
 ```
 
 Set up a build script
 
 ```typescript
-import { build } from 'esbuild';
-import esbuildPluginUnocss from 'tsup-plugin-unocss'
+import { defineConfig } from 'tsup';
+import defineConfig from 'tsup-plugin-unocss'
 
 async function myBuilder(){
-  const buildResult = await build({
-    entryPoints:[index]
-    plugins: [
+  const buildResult = await defineConfig({
+    entry:[index.ts]
+    esbuildPlugins: [
       esbuildPluginUnocss()
     ],
   });

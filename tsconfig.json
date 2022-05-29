@@ -11,9 +11,8 @@
     "skipLibCheck": true,
     "skipDefaultLibCheck": true,
     "types": [
-      "vite/client",
       "node"
-    ],
+    ]
   },
   "include": ["src"]
 }
