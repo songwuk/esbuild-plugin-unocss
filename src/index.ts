@@ -18,6 +18,7 @@ export default (options: myOptions = { isFileType: 'ts' }): Plugin => ({
   setup(build) {
     options.isFileType = options.isFileType || 'ts'
     const filter = /demo/
+    const suffix = '.ts'
     const state = {
       trackerImportId: '',
     }
@@ -26,7 +27,7 @@ export default (options: myOptions = { isFileType: 'ts' }): Plugin => ({
       if (resolve.namespace === 'unocss-js') {
         console.log(path.dirname(resolve.importer),'sssssss')
         return {
-          path: path.dirname(resolve.importer) + `/${resolve.path}`,
+          path: path.resolve(path.dirname(resolve.importer),resolve.path),
           namespace: 'unocss-css',
           pluginData: resolve.pluginData
         }
@@ -35,11 +36,11 @@ export default (options: myOptions = { isFileType: 'ts' }): Plugin => ({
         return // Ignore unresolvable paths
       }
       return {
-        path: path.isAbsolute(resolve.path)? resolve.path : path.resolve(resolve.resolveDir, resolve.path + '.ts'),
+        path: path.isAbsolute(resolve.path)? resolve.path : path.resolve(resolve.resolveDir, resolve.path + suffix),
         namespace: 'unocss-js'
       }
     })
-    build.onLoad({ filter, namespace: 'unocss-js' }, async (args) => {
+    build.onLoad({ filter: /\.ts$/, namespace: 'unocss-js' }, async (args) => {
       console.log('unocss-js', args)
       const options = presetUno()
       const sourceDir = path.dirname(args.path)
@@ -105,8 +106,7 @@ export default (options: myOptions = { isFileType: 'ts' }): Plugin => ({
         console.error(error)
       }
     })
-
-    build.onLoad({filter,namespace:'unocss-css'}, async(args)=>{
+    build.onLoad({filter:/\.css$/,namespace:'unocss-css'}, async(args)=>{
       console.log('unocss-css', args)
       return {
         contents: args.pluginData,
