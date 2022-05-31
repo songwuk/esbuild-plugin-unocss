@@ -3,7 +3,7 @@ import esbuildPluginUnocss from '../src/index'
 export default defineConfig({
   entry: ['./index.ts'],
   esbuildPlugins: [esbuildPluginUnocss({
-    isFileType: 'ts',
+    alias: '.',
   })],
   splitting: false,
   sourcemap: true,

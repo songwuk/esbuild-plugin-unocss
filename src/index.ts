@@ -9,34 +9,40 @@ import fs from 'fs-extra'
 import { addSideEffect } from '@babel/helper-module-imports'
 const generate = (_generate as any).default
 const traverse = (_traverse as any).default
-// import * as ts from 'typescript'
 interface myOptions {
-  isFileType: 'js' | 'ts' | 'tsx'
+  alias: string
 }
-export default (options: myOptions = { isFileType: 'ts' }): Plugin => ({
+export default (options: myOptions = { alias: 'ts' }): Plugin => ({
   name: 'esbuild-plugin-unocss',
   setup(build) {
-    options.isFileType = options.isFileType || 'ts'
-    const filter = /demo/
-    const suffix = '.ts'
-    const state = {
-      trackerImportId: '',
-    }
+    options.alias = options.alias || '.'
+    const filter = new RegExp(`${options.alias}`,'i')
+    const suffixname = ['.ts']
+
     build.onResolve({filter}, async(resolve) => {
-      console.log(resolve, 'resolve')
+      console.log(resolve,'resolve')
+      if(resolve.kind === 'entry-point')
+        return
       if (resolve.namespace === 'unocss-js') {
-        console.log(path.dirname(resolve.importer),'sssssss')
         return {
           path: path.resolve(path.dirname(resolve.importer),resolve.path),
-          namespace: 'unocss-css',
-          pluginData: resolve.pluginData
         }
       }
       if (resolve.resolveDir === '') {
         return // Ignore unresolvable paths
       }
+      let namePath = path.isAbsolute(resolve.path)? resolve.path : path.resolve(resolve.resolveDir, resolve.path)
+      if(!suffixname.includes(path.extname(namePath))){
+        for (const iterator of suffixname) {
+          const namePath1 = namePath + iterator
+          if(fs.existsSync(namePath1)){
+            namePath = namePath1
+            break
+          }
+        }
+      }
       return {
-        path: path.isAbsolute(resolve.path)? resolve.path : path.resolve(resolve.resolveDir, resolve.path + suffix),
+        path: namePath,
         namespace: 'unocss-js'
       }
     })
@@ -49,6 +55,9 @@ export default (options: myOptions = { isFileType: 'ts' }): Plugin => ({
       const code = parser.parse(source, {
         sourceType: 'unambiguous',
       })
+      const state = {
+        trackerImportId: '',
+      }
       const filename = path.basename(args.path).replace(/\.ts$/, '.css')
       let targets: unknown[] = []
       await traverse(code, {
@@ -99,18 +108,11 @@ export default (options: myOptions = { isFileType: 'ts' }): Plugin => ({
       try {
         return {
           contents: outfile.code,
-          pluginData: outfile.code,
+          // pluginData: outfile.code,
         }
       }
       catch (error) {
         console.error(error)
-      }
-    })
-    build.onLoad({filter:/\.css$/,namespace:'unocss-css'}, async(args)=>{
-      console.log('unocss-css', args)
-      return {
-        contents: args.pluginData,
-        loader: 'ts'
       }
     })
   },

@@ -1,4 +1,5 @@
 import { defineComponent, h } from 'vue'
+import './demo1.css'
 const demo = defineComponent({
   name: 'Demo',
   setup() {
