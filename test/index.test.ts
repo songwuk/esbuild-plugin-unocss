@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-describe('should', () => {
+describe('should start index', () => {
   it('exported', () => {
     expect(1).toEqual(1)
   })

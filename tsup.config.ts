@@ -6,7 +6,6 @@ export default defineConfig({
     '.ts': 'ts',
   },
   format: ['cjs', 'esm', 'iife'],
-  external:[],
   sourcemap: true,
   clean: true,
 })

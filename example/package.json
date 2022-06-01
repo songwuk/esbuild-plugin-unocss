@@ -15,6 +15,7 @@
     "tsup": "^6.0.1"
   },
   "dependencies": {
+    "tsup-plugin-unocss": "^0.1.1",
     "vue": "^3.2.36"
   }
 }

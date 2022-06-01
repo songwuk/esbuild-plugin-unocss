@@ -1,14 +1,9 @@
 import path from 'path'
-import { createGenerator } from '@unocss/core'
+import { createGenerator, escapeSelector  } from '@unocss/core'
 import presetUno from '@unocss/preset-uno'
 import type { Plugin } from 'esbuild'
-import * as parser from '@babel/parser'
-import _traverse from '@babel/traverse'
-import _generate from '@babel/generator'
+import * as esbuild from 'esbuild'
 import fs from 'fs-extra'
-import { addSideEffect } from '@babel/helper-module-imports'
-const generate = (_generate as any).default
-const traverse = (_traverse as any).default
 interface myOptions {
   alias: string
 }
@@ -17,7 +12,7 @@ export default (options: myOptions = { alias: 'ts' }): Plugin => ({
   setup(build) {
     options.alias = options.alias || '.'
     const filter = new RegExp(`${options.alias}`,'i')
-    const suffixname = ['.ts']
+    const suffixname = ['.ts','.css']
 
     build.onResolve({filter}, async(resolve) => {
       console.log(resolve,'resolve')
@@ -34,11 +29,8 @@ export default (options: myOptions = { alias: 'ts' }): Plugin => ({
       let namePath = path.isAbsolute(resolve.path)? resolve.path : path.resolve(resolve.resolveDir, resolve.path)
       if(!suffixname.includes(path.extname(namePath))){
         for (const iterator of suffixname) {
-          const namePath1 = namePath + iterator
-          if(fs.existsSync(namePath1)){
-            namePath = namePath1
-            break
-          }
+          namePath = namePath + iterator
+          break;
         }
       }
       return {
@@ -52,62 +44,36 @@ export default (options: myOptions = { alias: 'ts' }): Plugin => ({
       const sourceDir = path.dirname(args.path)
       const generator = createGenerator(options, { /* default options */ })
       const source = await fs.readFile(args.path, 'utf-8')
-      const code = parser.parse(source, {
-        sourceType: 'unambiguous',
-      })
-      const state = {
-        trackerImportId: '',
-      }
       const filename = path.basename(args.path).replace(/\.ts$/, '.css')
-      let targets: unknown[] = []
-      await traverse(code, {
-        Program: {
-          enter(path: any) {
-            path.traverse({
-              ObjectExpression(path: any) {
-                for (const iterator of path.node.properties) {
-                  if (iterator.type === 'ObjectProperty' && iterator.key.name !== 'name') {
-                    targets.push(iterator.key.name)
-                    targets = [...new Set(targets)]
-                  }
-                }
-              },
-              ImportDeclaration(curPath: any) {
-                // if hava import
-                const requirePath = curPath.get('source').node.value
-                if (requirePath === filename) {
-                  const specifierPath = curPath.specifiers[0]
-                  if (specifierPath.isImportSpecifier())
-                    state.trackerImportId = specifierPath.toString()
-                  else if (specifierPath.isImportNamespaceSpecifier())
-                    state.trackerImportId = specifierPath.get('local').toString()
-                  curPath.stop()
-                }
-              },
-            })
-            if (!state.trackerImportId)
-              // import 'demo.css'
-              state.trackerImportId = addSideEffect(path, filename)
-          },
-          exit() {
-            // first create css file
-            generator.generate(targets.join(' ')).then(async (target) => {
-              const tmpFilePath = path.resolve(sourceDir, filename)
-              const data = new Uint8Array(Buffer.from(`${target.css}`))
-              if (!target.css) {
-                console.error('Error', 'css is empty')
-                return undefined
-              }
-              await fs.writeFile(tmpFilePath, data, 'utf-8')
-              // then add css to code
-            })
-          },
-        },
+      const cssloader = await esbuild.transform(source, {
+        loader: 'ts',
+        tsconfigRaw: `{
+          "compilerOptions": {
+            "useDefineForClassFields": false, // 不使用define
+            "importsNotUsedAsValues": "remove",// 删除未使用的import
+            "preserveValueImports": false, // 不保留import的值
+          }
+        }`
       })
-      const outfile = await generate(code, { sourceMaps: true })
+      const unocss = await generator.applyExtractors(cssloader.code)
+      const matched = []
+      for (const i of Array.from(unocss)) {
+        if(i.endsWith(':') && !i.startsWith('name')){
+          matched.push(i.substring(0, i.length-1))
+        }
+      }
+      const { css } = await generator.generate(matched.join(' '),{ preflights: false })
+      const tmpFilePath = path.resolve(sourceDir, filename)
+      const data = new Uint8Array(Buffer.from(`${css}`))
+      if (!css) {
+        console.error('Error', 'css is empty')
+        return undefined
+      }
+      await fs.writeFile(tmpFilePath, data, 'utf-8')
+      // then add css to code
       try {
         return {
-          contents: outfile.code,
+          contents: `import "${filename}"\n ${cssloader.code}`,
           // pluginData: outfile.code,
         }
       }
