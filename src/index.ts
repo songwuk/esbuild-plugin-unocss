@@ -1,5 +1,5 @@
 import path from 'path'
-import { createGenerator, escapeSelector  } from '@unocss/core'
+import { createGenerator  } from '@unocss/core'
 import presetUno from '@unocss/preset-uno'
 import type { Plugin } from 'esbuild'
 import * as esbuild from 'esbuild'
