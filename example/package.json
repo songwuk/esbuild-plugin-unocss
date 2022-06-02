@@ -13,12 +13,9 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "tsup": "^6.0.1",
-    "esbuild": "^0.14.10"
+    "tsup": "^6.0.1"
   },
   "dependencies": {
-    "node-fetch": "^2.6.1",
-    "tsup-plugin-unocss": "^0.1.1",
     "vue": "^3.2.36"
   }
 }

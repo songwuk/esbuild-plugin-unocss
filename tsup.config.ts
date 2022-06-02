@@ -5,8 +5,9 @@ export default defineConfig({
   loader: {
     '.ts': 'ts',
   },
-  format: ['cjs', 'esm', 'iife'],
+  format: ['cjs', 'esm'],
   sourcemap: false,
   clean: true,
   bundle: true,
+  outDir: 'dist',
 })
