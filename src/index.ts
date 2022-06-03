@@ -15,10 +15,11 @@ export default (options: myOptions = { alias: 'ts' }): Plugin => ({
     const suffixname = ['.ts', '.css']
 
     build.onResolve({ filter }, async (resolve) => {
+      // eslint-disable-next-line no-console
       console.log(resolve, 'resolve')
       if (resolve.kind === 'entry-point')
         return
-      if (resolve.namespace === 'unocss-js') {
+      if (resolve.namespace === 'transform-js') {
         return {
           path: path.resolve(path.dirname(resolve.importer), resolve.path),
         }
@@ -35,19 +36,24 @@ export default (options: myOptions = { alias: 'ts' }): Plugin => ({
           }
         }
       }
+      if (namePath.endsWith('.css')) {
+        return {
+          path: namePath,
+          namespace: 'transform-css',
+        }
+      }
       return {
         path: namePath,
-        namespace: 'unocss-js',
+        namespace: 'transform-js',
       }
     })
-    build.onLoad({ filter: /\.ts$/, namespace: 'unocss-js' }, async (args) => {
-      console.log('unocss-js', args)
+    build.onLoad({ filter: /\.ts$/, namespace: 'transform-js' }, async (args) => {
       const options = presetUno()
       const sourceDir = path.dirname(args.path)
       const generator = createGenerator(options, { /* default options */ })
       const source = await fs.readFile(args.path, 'utf-8')
       const filename = path.basename(args.path).replace(/\.ts$/, '.css')
-      const cssloader = await esbuild.transform(source, {
+      const transformCode = await esbuild.transform(source, {
         loader: 'ts',
         tsconfigRaw: `{
           "compilerOptions": {
@@ -57,7 +63,7 @@ export default (options: myOptions = { alias: 'ts' }): Plugin => ({
           }
         }`,
       })
-      const unocss = await generator.applyExtractors(cssloader.code)
+      const unocss = await generator.applyExtractors(transformCode.code)
       const matched = []
       for (const i of Array.from(unocss)) {
         if (i.endsWith(':') && !i.startsWith('name'))
@@ -74,12 +80,24 @@ export default (options: myOptions = { alias: 'ts' }): Plugin => ({
       // then add css to code
       try {
         return {
-          contents: `import "${filename}"\n ${cssloader.code}`,
+          contents: `import "${filename}"\n ${transformCode.code}`,
           // pluginData: outfile.code,
         }
       }
       catch (error) {
         console.error(error)
+      }
+    })
+
+    build.onLoad({ filter: /\.css$/, namespace: 'transform-css' }, async (args) => {
+      try {
+        return {
+          path: args.path,
+          contents: await fs.readFile(args.path, 'utf-8'),
+        }
+      }
+      catch (error) {
+        console.error('Error', 'css is empty')
       }
     })
   },
