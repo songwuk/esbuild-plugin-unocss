@@ -72,15 +72,15 @@ export default (options: myOptions = { alias: 'ts' }): Plugin => ({
       const { css } = await generator.generate(matched.join(' '), { preflights: false })
       const tmpFilePath = path.resolve(sourceDir, filename)
       const data = new Uint8Array(Buffer.from(`${css}`))
-      if (!css) {
-        console.error('Error', 'css is empty')
-        return undefined
+      let lineImport = ''
+      if (css) {
+        fs.writeFile(tmpFilePath, data, 'utf-8')
+        lineImport = `import "${filename}"`
       }
-      await fs.writeFile(tmpFilePath, data, 'utf-8')
       // then add css to code
       try {
         return {
-          contents: `import "${filename}"\n ${transformCode.code}`,
+          contents: `${lineImport}\n${transformCode.code}`,
           // pluginData: outfile.code,
         }
       }

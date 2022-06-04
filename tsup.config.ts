@@ -7,5 +7,5 @@ export default defineConfig({
   clean: true,
   bundle: true,
   outDir: 'dist',
-  external: ['esbuild'],
+  external: ['esbuild'], // 可以使用esbuild的插件  /** Don't bundle these modules */
 })
