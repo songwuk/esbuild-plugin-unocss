@@ -6,7 +6,7 @@ const demo = defineComponent({
   name: 'Demo',
   setup() {
     const a = 2
-    return h('div', {}, a)
+    return h('div', { m4: true }, a)
   },
 }) as DefineComponent
 

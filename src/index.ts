@@ -7,41 +7,45 @@ import fs from 'fs-extra'
 interface myOptions {
   alias: string
 }
+
 export default (options: myOptions = { alias: 'ts' }): Plugin => ({
   name: 'esbuild-plugin-unocss',
   setup(build) {
     options.alias = options.alias || '.'
     const filter = new RegExp(`${options.alias}`, 'i')
     const suffixname = ['.ts', '.css']
-
+    const checkPath = (pathName: string) => {
+      if (!suffixname.includes(path.extname(pathName))) {
+        for (const iterator of suffixname) {
+          if (fs.existsSync(pathName + iterator)) {
+            pathName = pathName + iterator
+            break
+          }
+        }
+      }
+      return pathName
+    }
     build.onResolve({ filter }, async (resolve) => {
-      // eslint-disable-next-line no-console
-      console.log(resolve, 'resolve')
       if (resolve.kind === 'entry-point')
         return
       if (resolve.namespace === 'transform-js') {
+        const pathName = path.resolve(path.dirname(resolve.importer), resolve.path)
         return {
-          path: path.resolve(path.dirname(resolve.importer), resolve.path),
+          path: checkPath(pathName),
         }
       }
       if (resolve.resolveDir === '')
         return // Ignore unresolvable paths
 
       let namePath = path.isAbsolute(resolve.path) ? resolve.path : path.resolve(resolve.resolveDir, resolve.path)
-      if (!suffixname.includes(path.extname(namePath))) {
-        for (const iterator of suffixname) {
-          if (fs.existsSync(namePath + iterator)) {
-            namePath = namePath + iterator
-            break
-          }
-        }
-      }
+      namePath = checkPath(namePath)
       if (namePath.endsWith('.css')) {
         return {
           path: namePath,
           namespace: 'transform-css',
         }
       }
+      console.log(namePath)
       return {
         path: namePath,
         namespace: 'transform-js',
@@ -74,18 +78,17 @@ export default (options: myOptions = { alias: 'ts' }): Plugin => ({
       const data = new Uint8Array(Buffer.from(`${css}`))
       let lineImport = ''
       if (css) {
-        fs.writeFile(tmpFilePath, data, 'utf-8')
+        await fs.writeFile(tmpFilePath, data, 'utf-8')
         lineImport = `import "${filename}"`
       }
       // then add css to code
       try {
         return {
           contents: `${lineImport}\n${transformCode.code}`,
-          // pluginData: outfile.code,
         }
       }
       catch (error) {
-        console.error(error)
+        console.error('Error', error)
       }
     })
 
@@ -97,7 +100,7 @@ export default (options: myOptions = { alias: 'ts' }): Plugin => ({
         }
       }
       catch (error) {
-        console.error('Error', 'css is empty')
+        console.error('Error', error)
       }
     })
   },
