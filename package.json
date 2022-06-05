@@ -1,7 +1,7 @@
 {
   "name": "tsup-plugin-unocss",
   "type": "module",
-  "version": "0.1.6",
+  "version": "0.1.7",
   "packageManager": "pnpm@7.1.5",
   "description": "tsup plguin for unocss",
   "keywords": [
