@@ -84,9 +84,16 @@ export default (options: myOptions = { alias: 'ts' }): Plugin => ({
         if (i.endsWith(':') && !i.startsWith('name'))
           matched.push(i.substring(0, i.length - 1))
       }
+
       const { css } = await generator.generate(matched.join(' '), { preflights: false })
       const tmpFilePath = path.resolve(sourceDir, filename)
-      const data = new Uint8Array(Buffer.from(`${css}`))
+      let replaceCss = css
+      matched.forEach((i) => {
+        const reg = new RegExp(i, 'g')
+        replaceCss = replaceCss.replace(reg, `${i},[${i}='']`)
+      })
+      const data = new Uint8Array(Buffer.from(`${replaceCss}`))
+      // console.log(matched, replaceCss, 'unocss')
       let lineImport = ''
       if (css) {
         await fs.writeFile(tmpFilePath, data, 'utf-8')
