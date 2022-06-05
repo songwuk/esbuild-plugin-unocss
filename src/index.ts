@@ -14,6 +14,9 @@ export default (options: myOptions = { alias: 'ts' }): Plugin => ({
     options.alias = options.alias || '.'
     const filter = new RegExp(`${options.alias}`, 'i')
     const suffixname = ['.ts', '.css']
+    /**
+     * check
+     */
     const checkPath = (pathName: string) => {
       if (!suffixname.includes(path.extname(pathName))) {
         for (const iterator of suffixname) {
@@ -30,8 +33,16 @@ export default (options: myOptions = { alias: 'ts' }): Plugin => ({
         return
       if (resolve.namespace === 'transform-js') {
         const pathName = path.resolve(path.dirname(resolve.importer), resolve.path)
+        // console.log(checkPath(pathName), 'pathName')
+        if (pathName.endsWith('.css')) {
+          return {
+            path: pathName,
+            namespace: 'transform-css',
+          }
+        }
         return {
           path: checkPath(pathName),
+          namespace: 'transform-js',
         }
       }
       if (resolve.resolveDir === '')
@@ -45,7 +56,7 @@ export default (options: myOptions = { alias: 'ts' }): Plugin => ({
           namespace: 'transform-css',
         }
       }
-      console.log(namePath)
+      // console.log(namePath)
       return {
         path: namePath,
         namespace: 'transform-js',

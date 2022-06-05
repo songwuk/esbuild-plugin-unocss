@@ -1,12 +1,12 @@
 import { defineComponent, h } from 'vue'
 
-const WlDemo = defineComponent({
-  name: 'WlDemo',
+const WlDemo1 = defineComponent({
+  name: 'WlDemo1',
   setup() {
     return h('div', { ml41: true }, 'step')
   },
 })
 
 export {
-  WlDemo,
+  WlDemo1,
 }

@@ -1,1 +1,1 @@
-export { WlDemo as sssss } from './demos'
+export { WlDemo1 as sssss } from './demos'
