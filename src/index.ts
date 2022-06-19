@@ -13,11 +13,11 @@ export default (options: myOptions = { alias: 'ts' }): Plugin => ({
   setup(build) {
     // eslint-disable-next-line no-console
     console.log(options.alias)
-    const filterjs = /\.[jt](sx|s)?$/
+    const filterjs = /.*/ // /\.[jt](sx|s)?$/
     const filtercss = /\.css$/
-    const suffixname = ['.ts', '.tsx', '.js', '.jsx', '.css']
+    const suffixname = ['.ts', '.tsx', '.js', '.jsx']
     /**
-     * check
+     * checkPath
      */
     const checkPath = (pathName: string) => {
       if (!suffixname.includes(path.extname(pathName))) {
@@ -31,11 +31,18 @@ export default (options: myOptions = { alias: 'ts' }): Plugin => ({
       return pathName
     }
     build.onResolve({ filter: filterjs }, async (resolve) => {
-      if (resolve.resolveDir === '')
-        return // Ignore unresolvable paths
-
+      // console.log({ importer: resolve.importer, resolveDir: resolve.resolveDir, path: resolve.path })
       let namePath = path.isAbsolute(resolve.path) ? resolve.path : path.resolve(resolve.resolveDir, resolve.path)
       namePath = checkPath(namePath)
+      if (!suffixname.includes(path.extname(namePath))) {
+        if (!resolve.path.endsWith('.css'))
+          return null
+        return {
+          path: namePath,
+          namespace: 'transform-css',
+        }
+      }
+
       return {
         path: namePath,
         namespace: 'transform-js',
@@ -43,14 +50,8 @@ export default (options: myOptions = { alias: 'ts' }): Plugin => ({
     })
     build.onResolve({ filter: filtercss }, async (resolve) => {
       const pathName = path.resolve(path.dirname(resolve.importer), resolve.path)
-      if (pathName.endsWith('.css')) {
-        return {
-          path: pathName,
-          namespace: 'transform-css',
-        }
-      }
       return {
-        path: checkPath(pathName),
+        path: pathName,
         namespace: 'transform-css',
       }
     })
@@ -105,6 +106,7 @@ export default (options: myOptions = { alias: 'ts' }): Plugin => ({
       try {
         return {
           contents: `${lineImport}\n${transformCode.code}`,
+          resolveDir: sourceDir,
         }
       }
       catch (error) {
@@ -112,10 +114,13 @@ export default (options: myOptions = { alias: 'ts' }): Plugin => ({
       }
     })
 
-    build.onLoad({ filter: /.*/, namespace: 'transform-css' }, async (args) => {
+    build.onLoad({ filter: filtercss, namespace: 'transform-css' }, async (args) => {
+      console.log(args, 'csssssss')
+      const sourceDir = path.dirname(args.path)
       try {
         return {
           path: args.path,
+          resolveDir: sourceDir,
           contents: await fs.readFile(args.path, 'utf-8'),
         }
       }
