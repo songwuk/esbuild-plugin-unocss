@@ -15,7 +15,7 @@ export default (options: myOptions = { alias: 'ts' }): Plugin => ({
     console.log(options.alias)
     const filterjs = /\.[jt](sx|s)?$/
     const filtercss = /\.css$/
-    const suffixname = ['.ts', '.tsx', '.js', 'jsx', '.css']
+    const suffixname = ['.ts', '.tsx', '.js', '.jsx', '.css']
     /**
      * check
      */
@@ -31,13 +31,11 @@ export default (options: myOptions = { alias: 'ts' }): Plugin => ({
       return pathName
     }
     build.onResolve({ filter: filterjs }, async (resolve) => {
-      if (resolve.kind === 'entry-point')
-        return
       if (resolve.resolveDir === '')
         return // Ignore unresolvable paths
+
       let namePath = path.isAbsolute(resolve.path) ? resolve.path : path.resolve(resolve.resolveDir, resolve.path)
       namePath = checkPath(namePath)
-      console.log(namePath, 'namePath')
       return {
         path: namePath,
         namespace: 'transform-js',
@@ -56,14 +54,25 @@ export default (options: myOptions = { alias: 'ts' }): Plugin => ({
         namespace: 'transform-css',
       }
     })
-    build.onLoad({ filter: filterjs, namespace: 'transform-js' }, async (args) => {
+    build.onLoad({ filter: /.*/, namespace: 'transform-js' }, async (args) => {
       const options = presetUno()
       const sourceDir = path.dirname(args.path)
       const generator = createGenerator(options, { /* default options */ })
       const source = await fs.readFile(args.path, 'utf-8')
-      const filename = path.basename(args.path).replace(/\.ts$/, '.css')
+      const fileSuffix = path.extname(args.path)
+      let loaderType = 'ts' as esbuild.Loader
+      if (fileSuffix.endsWith('.js'))
+        loaderType = 'js'
+      else if (fileSuffix.endsWith('.jsx'))
+        loaderType = 'jsx'
+      else if (fileSuffix.endsWith('.ts'))
+        loaderType = 'ts'
+      else if (fileSuffix.endsWith('.tsx'))
+        loaderType = 'tsx'
+      const regSuffix = new RegExp(`${fileSuffix}$`, 'ig')
+      const filename = path.basename(args.path).replace(regSuffix, '.css')
       const transformCode = await esbuild.transform(source, {
-        loader: 'ts',
+        loader: loaderType,
         tsconfigRaw: `{
           "compilerOptions": {
             "useDefineForClassFields": false, // 不使用define
@@ -103,7 +112,7 @@ export default (options: myOptions = { alias: 'ts' }): Plugin => ({
       }
     })
 
-    build.onLoad({ filter: filtercss, namespace: 'transform-css' }, async (args) => {
+    build.onLoad({ filter: /.*/, namespace: 'transform-css' }, async (args) => {
       try {
         return {
           path: args.path,
