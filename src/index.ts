@@ -11,11 +11,14 @@ interface myOptions {
 export default (options: myOptions = { alias: 'ts' }): Plugin => ({
   name: 'esbuild-plugin-unocss',
   setup(build) {
-    options.alias = options.alias || '.'
-    const filter = new RegExp(`${options.alias}`, 'i')
-    const suffixname = ['.ts', '.css']
+    // eslint-disable-next-line no-console
+    console.log(options.alias)
+    const filterjs = /\.[jt](sx|s)?$/
+    const filtercss = /.\.css$/
+    const inputfileType = /^\./
+    const suffixname = ['.ts', '.tsx', '.js', '.jsx']
     /**
-     * check
+     * checkPath
      */
     const checkPath = (pathName: string) => {
       if (!suffixname.includes(path.extname(pathName))) {
@@ -28,48 +31,39 @@ export default (options: myOptions = { alias: 'ts' }): Plugin => ({
       }
       return pathName
     }
-    build.onResolve({ filter }, async (resolve) => {
-      if (resolve.kind === 'entry-point')
-        return
-      if (resolve.namespace === 'transform-js') {
-        const pathName = path.resolve(path.dirname(resolve.importer), resolve.path)
-        // console.log(checkPath(pathName), 'pathName')
-        if (pathName.endsWith('.css')) {
-          return {
-            path: pathName,
-            namespace: 'transform-css',
-          }
-        }
-        return {
-          path: checkPath(pathName),
-          namespace: 'transform-js',
-        }
+    build.onResolve({ filter: filtercss }, async (resolve) => {
+      return {
+        path: path.isAbsolute(resolve.path) ? resolve.path : path.resolve(resolve.resolveDir, resolve.path),
+        namespace: 'transform-css',
       }
-      if (resolve.resolveDir === '')
-        return // Ignore unresolvable paths
-
+    })
+    build.onResolve({ filter: inputfileType }, async (resolve) => {
       let namePath = path.isAbsolute(resolve.path) ? resolve.path : path.resolve(resolve.resolveDir, resolve.path)
       namePath = checkPath(namePath)
-      if (namePath.endsWith('.css')) {
-        return {
-          path: namePath,
-          namespace: 'transform-css',
-        }
-      }
-      // console.log(namePath)
       return {
         path: namePath,
         namespace: 'transform-js',
       }
     })
-    build.onLoad({ filter: /\.ts$/, namespace: 'transform-js' }, async (args) => {
+    build.onLoad({ filter: filterjs, namespace: 'transform-js' }, async (args) => {
       const options = presetUno()
       const sourceDir = path.dirname(args.path)
       const generator = createGenerator(options, { /* default options */ })
       const source = await fs.readFile(args.path, 'utf-8')
-      const filename = path.basename(args.path).replace(/\.ts$/, '.css')
+      const fileSuffix = path.extname(args.path)
+      let loaderType = 'ts' as esbuild.Loader
+      if (fileSuffix.endsWith('.js'))
+        loaderType = 'js'
+      else if (fileSuffix.endsWith('.jsx'))
+        loaderType = 'jsx'
+      else if (fileSuffix.endsWith('.ts'))
+        loaderType = 'ts'
+      else if (fileSuffix.endsWith('.tsx'))
+        loaderType = 'tsx'
+      const regSuffix = new RegExp(`${fileSuffix}$`, 'ig')
+      const filename = path.basename(args.path).replace(regSuffix, '.css')
       const transformCode = await esbuild.transform(source, {
-        loader: 'ts',
+        loader: loaderType,
         tsconfigRaw: `{
           "compilerOptions": {
             "useDefineForClassFields": false, // 不使用define
@@ -93,16 +87,17 @@ export default (options: myOptions = { alias: 'ts' }): Plugin => ({
         replaceCss = replaceCss.replace(reg, `${i},[${i}='']`)
       })
       const data = new Uint8Array(Buffer.from(`${replaceCss}`))
-      // console.log(matched, replaceCss, 'unocss')
       let lineImport = ''
       if (css) {
         await fs.writeFile(tmpFilePath, data, 'utf-8')
-        lineImport = `import "${filename}"`
+        lineImport = `import "./${filename}"`
       }
       // then add css to code
       try {
         return {
           contents: `${lineImport}\n${transformCode.code}`,
+          loader: loaderType,
+          resolveDir: sourceDir,
         }
       }
       catch (error) {
@@ -110,10 +105,12 @@ export default (options: myOptions = { alias: 'ts' }): Plugin => ({
       }
     })
 
-    build.onLoad({ filter: /\.css$/, namespace: 'transform-css' }, async (args) => {
+    build.onLoad({ filter: filtercss, namespace: 'transform-css' }, async (args) => {
+      const sourceDir = path.dirname(args.path)
       try {
         return {
           path: args.path,
+          resolveDir: sourceDir,
           contents: await fs.readFile(args.path, 'utf-8'),
         }
       }
