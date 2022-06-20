@@ -13,8 +13,9 @@ export default (options: myOptions = { alias: 'ts' }): Plugin => ({
   setup(build) {
     // eslint-disable-next-line no-console
     console.log(options.alias)
-    const filterjs = /.*/ // /\.[jt](sx|s)?$/
-    const filtercss = /\.css$/
+    const filterjs = /\.[jt](sx|s)?$/
+    const filtercss = /.\.css$/
+    const inputfileType = /^\./
     const suffixname = ['.ts', '.tsx', '.js', '.jsx']
     /**
      * checkPath
@@ -30,32 +31,21 @@ export default (options: myOptions = { alias: 'ts' }): Plugin => ({
       }
       return pathName
     }
-    build.onResolve({ filter: filterjs }, async (resolve) => {
-      // console.log({ importer: resolve.importer, resolveDir: resolve.resolveDir, path: resolve.path })
+    build.onResolve({ filter: filtercss }, async (resolve) => {
+      return {
+        path: path.isAbsolute(resolve.path) ? resolve.path : path.resolve(resolve.resolveDir, resolve.path),
+        namespace: 'transform-css',
+      }
+    })
+    build.onResolve({ filter: inputfileType }, async (resolve) => {
       let namePath = path.isAbsolute(resolve.path) ? resolve.path : path.resolve(resolve.resolveDir, resolve.path)
       namePath = checkPath(namePath)
-      if (!suffixname.includes(path.extname(namePath))) {
-        if (!resolve.path.endsWith('.css'))
-          return null
-        return {
-          path: namePath,
-          namespace: 'transform-css',
-        }
-      }
-
       return {
         path: namePath,
         namespace: 'transform-js',
       }
     })
-    build.onResolve({ filter: filtercss }, async (resolve) => {
-      const pathName = path.resolve(path.dirname(resolve.importer), resolve.path)
-      return {
-        path: pathName,
-        namespace: 'transform-css',
-      }
-    })
-    build.onLoad({ filter: /.*/, namespace: 'transform-js' }, async (args) => {
+    build.onLoad({ filter: filterjs, namespace: 'transform-js' }, async (args) => {
       const options = presetUno()
       const sourceDir = path.dirname(args.path)
       const generator = createGenerator(options, { /* default options */ })
@@ -100,12 +90,13 @@ export default (options: myOptions = { alias: 'ts' }): Plugin => ({
       let lineImport = ''
       if (css) {
         await fs.writeFile(tmpFilePath, data, 'utf-8')
-        lineImport = `import "${filename}"`
+        lineImport = `import "./${filename}"`
       }
       // then add css to code
       try {
         return {
           contents: `${lineImport}\n${transformCode.code}`,
+          loader: loaderType,
           resolveDir: sourceDir,
         }
       }
@@ -115,7 +106,6 @@ export default (options: myOptions = { alias: 'ts' }): Plugin => ({
     })
 
     build.onLoad({ filter: filtercss, namespace: 'transform-css' }, async (args) => {
-      console.log(args, 'csssssss')
       const sourceDir = path.dirname(args.path)
       try {
         return {

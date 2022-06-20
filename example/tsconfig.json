@@ -17,11 +17,8 @@
     "types": [
       "node"
     ],
-    "paths": {
-      "demo": [
-        "demo.ts"
-      ]
-    }
-  }
+  },
+  "allowJs": true,
+  "include": ["src/**/*.ts", "src/**/*.tsx", "src/**/*.d.ts", "src/**/*.js", "src/**/*.jsx"],
 }
   
