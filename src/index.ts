@@ -73,16 +73,15 @@ export default (options: myOptions = { alias: 'ts' }): Plugin => ({
         }`,
       })
       const unocss = await generator.applyExtractors(transformCode.code)
-      const matched = []
+      const matchedMy = []
       for (const i of Array.from(unocss)) {
         if (i.endsWith(':') && !i.startsWith('name'))
-          matched.push(i.substring(0, i.length - 1))
+          matchedMy.push(i.substring(0, i.length - 1))
       }
-
-      const { css } = await generator.generate(matched.join(' '), { preflights: false })
+      const { css, matched } = await generator.generate(matchedMy.join(' '), { preflights: false })
       const tmpFilePath = path.resolve(sourceDir, filename)
       let replaceCss = css
-      matched.forEach((i) => {
+      Array.from(matched).forEach((i) => {
         const reg = new RegExp(i, 'g')
         replaceCss = replaceCss.replace(reg, `${i},[${i}='']`)
       })
