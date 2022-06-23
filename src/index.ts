@@ -40,7 +40,7 @@ export default (options: myOptions = { alias: 'ts' }): Plugin => ({
     build.onResolve({ filter: inputfileType }, async (resolve) => {
       let namePath = path.isAbsolute(resolve.path) ? resolve.path : path.resolve(resolve.resolveDir, resolve.path)
       namePath = checkPath(namePath)
-      console.log(namePath,'namePath')
+      console.log(namePath, 'namePath')
       return {
         path: namePath,
         namespace: 'transform-js',
@@ -73,7 +73,7 @@ export default (options: myOptions = { alias: 'ts' }): Plugin => ({
           }
         }`,
       })
-      console.log(transformCode.code,'code')
+      console.log(transformCode.code, 'code')
       const unocss = await generator.applyExtractors(transformCode.code)
       const matchedMy = []
       for (const i of Array.from(unocss)) {
@@ -113,13 +113,15 @@ export default (options: myOptions = { alias: 'ts' }): Plugin => ({
         bundle: true,
         write: false,
       })
-      console.log(result.outputFiles[0].text,'text')
+      console.log(result.outputFiles[0].text, 'text')
       try {
-        return args.path ? {
-          resolveDir: sourceDir,
-          contents: result.outputFiles[0].text,
-          loader: 'file'
-        } : null
+        return args.path
+          ? {
+              resolveDir: sourceDir,
+              contents: result.outputFiles[0].text,
+              loader: 'file',
+            }
+          : null
       }
       catch (error) {
         console.error('Error', error)
