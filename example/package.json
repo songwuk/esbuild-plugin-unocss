@@ -14,9 +14,10 @@
   "license": "ISC",
   "devDependencies": {
     "@tsconfig/esm": "^1.0.1",
-    "tsup": "^6.0.1"
+    "tsup": "^6.1.2"
   },
   "dependencies": {
+    "esbuild": "^0.14.47",
     "vue": "^3.2.36"
   }
 }
