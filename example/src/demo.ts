@@ -1,7 +1,7 @@
 import { defineComponent, h } from 'vue'
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import type { DefineComponent, VNode } from 'vue'
-import './demo1.css'
+// import './demo1.css'
 const demo = defineComponent({
   name: 'Demo',
   setup() {

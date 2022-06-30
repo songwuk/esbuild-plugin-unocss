@@ -37,10 +37,17 @@ export default (options: myOptions = { alias: 'ts' }): Plugin => ({
         namespace: 'transform-css',
       }
     })
-    build.onResolve({ filter: inputfileType }, async (resolve) => {
+    build.onResolve({ filter: filterjs }, async (resolve) => {
+      console.log(resolve, 'resolve')
+      return {
+        path: resolve.path,
+        namespace: 'transform-js',
+      }
+    })
+    build.onResolve({ filter: filterjs, namespace: 'transform-js' }, async (resolve) => {
       let namePath = path.isAbsolute(resolve.path) ? resolve.path : path.resolve(resolve.resolveDir, resolve.path)
       namePath = checkPath(namePath)
-      console.log(namePath, 'namePath')
+      console.log(namePath, resolve, 'namePath')
       return {
         path: namePath,
         namespace: 'transform-js',
