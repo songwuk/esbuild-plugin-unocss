@@ -1,1 +1,2 @@
-import './add.js'
+import build from './esbuild.build.js'
+build()
