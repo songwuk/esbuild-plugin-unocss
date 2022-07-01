@@ -45,10 +45,12 @@ importers:
     specifiers:
       '@tsconfig/esm': ^1.0.1
       esbuild: ^0.14.47
+      joycon: ^3.1.1
       tsup: ^6.1.2
       vue: ^3.2.36
     dependencies:
       esbuild: 0.14.47
+      joycon: 3.1.1
       vue: 3.2.37
     devDependencies:
       '@tsconfig/esm': 1.0.1
@@ -2226,7 +2228,6 @@ packages:
   /joycon/3.1.1:
     resolution: {integrity: sha512-34wB/Y7MW7bzjKRjUKTa46I2Z7eV62Rkhva+KkopW7Qvv/OSWBqvkSY7vusOPrNuZcUG3tApvdVgNB8POj3SPw==}
     engines: {node: '>=10'}
-    dev: true
 
   /js-tokens/4.0.0:
     resolution: {integrity: sha512-RdJUflcE3cUzKiMqQgsCu06FPu9UdIJO0beYbPhHN4k6apgJtifcoCtT9bcxOpYBtpD2kCM6Sbzg4CausW/PKQ==}

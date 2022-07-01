@@ -1,10 +1,14 @@
 /* eslint-disable no-console */
 import * as esbuild from 'esbuild'
 import fs from 'fs-extra'
+import JoyCon from 'joycon'
 import esbuildPluginUnocss from '../dist/index.js'
-
 async function buildJs() {
+  const joycon = new JoyCon()
   const datafommat = await fs.readFile('./package.json', 'utf8')
+  joycon.resolve(['./tsconfig.json']).then((data) => {
+    console.log(data, 'sss')
+  })
   Array.from(['iife', 'esm', 'cjs']).forEach(async (format) => {
     const pkgType = JSON.parse(datafommat).type && JSON.parse(datafommat).type
     let jsExtension = '.js'
