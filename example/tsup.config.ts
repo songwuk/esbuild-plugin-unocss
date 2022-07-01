@@ -6,6 +6,7 @@ export default defineConfig({
     alias: 'ts',
   })],
   splitting: false,
+  format: ['cjs', 'esm'],
   sourcemap: true,
   clean: true,
 })

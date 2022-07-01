@@ -7,7 +7,6 @@ import fs from 'fs-extra'
 interface myOptions {
   alias: string
 }
-
 export default (options: myOptions = { alias: 'ts' }): Plugin => ({
   name: 'esbuild-plugin-unocss',
   setup(build) {
@@ -15,7 +14,6 @@ export default (options: myOptions = { alias: 'ts' }): Plugin => ({
     console.log(options.alias)
     const filterjs = /\.[jt](sx|s)?$/
     const filtercss = /.\.css$/
-    const inputfileType = /^\./
     const suffixname = ['.ts', '.tsx', '.js', '.jsx']
     /**
      * checkPath
@@ -31,25 +29,25 @@ export default (options: myOptions = { alias: 'ts' }): Plugin => ({
       }
       return pathName
     }
+    build.onResolve({ filter: /\.*/ }, async (resolve) => {
+      let namePath = path.isAbsolute(resolve.path) ? resolve.path : path.resolve(resolve.resolveDir, resolve.path)
+      namePath = checkPath(namePath)
+      if (suffixname.filter(suffix => namePath.endsWith(suffix)).length === 0)
+        return null
+      return {
+        path: namePath,
+        namespace: 'transform-js',
+      }
+    })
     build.onResolve({ filter: filtercss }, async (resolve) => {
       return {
         path: path.isAbsolute(resolve.path) ? resolve.path : path.resolve(resolve.resolveDir, resolve.path),
         namespace: 'transform-css',
       }
     })
-    build.onResolve({ filter: filterjs }, async (resolve) => {
-      console.log(resolve, 'resolve')
+    build.onResolve({ filter: filterjs, namespace: 'transform-js' }, async (resolve) => {
       return {
         path: resolve.path,
-        namespace: 'transform-js',
-      }
-    })
-    build.onResolve({ filter: filterjs, namespace: 'transform-js' }, async (resolve) => {
-      let namePath = path.isAbsolute(resolve.path) ? resolve.path : path.resolve(resolve.resolveDir, resolve.path)
-      namePath = checkPath(namePath)
-      console.log(namePath, resolve, 'namePath')
-      return {
-        path: namePath,
         namespace: 'transform-js',
       }
     })
@@ -80,7 +78,6 @@ export default (options: myOptions = { alias: 'ts' }): Plugin => ({
           }
         }`,
       })
-      console.log(transformCode.code, 'code')
       const unocss = await generator.applyExtractors(transformCode.code)
       const matchedMy = []
       for (const i of Array.from(unocss)) {
@@ -112,15 +109,13 @@ export default (options: myOptions = { alias: 'ts' }): Plugin => ({
         console.error('Error', error)
       }
     })
-
-    build.onLoad({ filter: /.*/, namespace: 'transform-css' }, async (args) => {
+    build.onLoad({ filter: filtercss, namespace: 'transform-css' }, async (args) => {
       const sourceDir = path.dirname(args.path)
       const result = await esbuild.build({
         entryPoints: [args.path],
         bundle: true,
         write: false,
       })
-      console.log(result.outputFiles[0].text, 'text')
       try {
         return args.path
           ? {

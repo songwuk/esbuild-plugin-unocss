@@ -4,4 +4,4 @@
 export { demo as WlSteps } from './demo'
 // export { demo as WlStepsTsx } from './demotsx'
 export * from './com/index'
-// export { TabPane as TabPanesss } from './newDemo'
+export { TabPane as TabPanesss } from './newDemo'
