@@ -88,7 +88,7 @@ export default (options: myOptions = { alias: 'ts' }): Plugin => ({
       const tmpFilePath = path.resolve(sourceDir, filename)
       let replaceCss = css
       Array.from(matched).forEach((i) => {
-        const reg = new RegExp(i, 'g')
+        const reg = new RegExp(i, 'i')
         replaceCss = replaceCss.replace(reg, `${i},[${i}='']`)
       })
       const data = new Uint8Array(Buffer.from(`${replaceCss}`))
