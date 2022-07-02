@@ -1,7 +1,7 @@
 {
   "name": "tsup-plugin-unocss",
   "type": "module",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "packageManager": "pnpm@7.1.5",
   "description": "tsup plguin for unocss",
   "author": "Song wuk <1017301325@qq.com>",
