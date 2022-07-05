@@ -79,13 +79,21 @@ export default (options: myOptions = { alias: 'ts' }): Plugin => ({
         }`,
       })
       const unocss = await generator.applyExtractors(transformCode.code)
-      const { css, matched } = await generator.generate(Array.from(unocss).join(' '), { preflights: false })
+      /**
+       * unocss css key
+       */
+      const unocssArray = Array.from(unocss).map((item) => {
+        return item.endsWith(':') ? item.substring(0, item.length - 1) : `${item}`
+      }).filter(item => !/,|\{|\)$/.test(item))
+      const { css, matched } = await generator.generate(unocssArray.join(' '), { preflights: false })
       const tmpFilePath = path.resolve(sourceDir, filename)
       let replaceCss = css
-      Array.from(matched).forEach((i) => {
-        const reg = new RegExp(i, 'i')
-        replaceCss = replaceCss.replace(reg, `${i},[${i}='']`)
-      })
+      if (matched.size > 0) {
+        Array.from(matched).forEach((i) => {
+          const reg = new RegExp(i, 'i')
+          replaceCss = replaceCss.replace(reg, `${i},[${i}='']`)
+        })
+      }
       const data = new Uint8Array(Buffer.from(`${replaceCss}`))
       let lineImport = ''
       if (css) {

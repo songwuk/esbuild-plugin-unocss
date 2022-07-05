@@ -7,15 +7,16 @@ const pathExists = (fp: string) =>
       resolve(!err)
     })
   })
-
 const __filename = fileURLToPath(import.meta.url) // 当前所在的文件地址
 export async function getFile(fp: string) {
-  if (await pathExists(fp))
-    return fs.readFile(fp, 'utf8')
+  const pathRead = path.resolve(path.dirname(__filename), fp || '')
+  if (await pathExists(pathRead))
+    return fs.readFile(pathRead, 'utf8')
   return null
 }
 
-getFile(path.resolve(path.dirname(__filename), '../package.json')).then((x) => {
-  // eslint-disable-next-line no-console
-  console.log(x)
-})
+// // abosolute path
+// getFile('../package.json').then((x) => {
+//   // eslint-disable-next-line no-console
+//   console.log(x)
+// })

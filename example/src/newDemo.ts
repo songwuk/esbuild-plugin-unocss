@@ -14,11 +14,16 @@ const TabPane = defineComponent({
   setup(props, ctx) {
     const paneName = ref('ssss')
     return () => h('div', {
-      style: {
-        display: 'block',
-      },
       id: `pane-${paneName.value}`,
       m3: '',
+      ...{
+        'absolute': '',
+        'after-absolute': '',
+        'w-7xl': '',
+        'max-w-7xl': '',
+        'after-content-none': '',
+        'after-left-0': '',
+      },
     }, [ctx.slots.default ? h(ctx.slots.default) : ''])
   },
 })
